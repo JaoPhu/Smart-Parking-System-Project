@@ -1,0 +1,45 @@
+/* ===== style.css ===== */
+
+/* ปรับให้การ์ดมีมุมโค้งมนและเงานุ่มนวลขึ้น */
+.card {
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* ปรับปุ่มให้ดูทันสมัย */
+.btn-outline-light {
+  border: 1px solid white;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+
+/* เพิ่ม padding และระยะห่างให้ layout ดูโล่ง */
+body {
+  font-family: "Prompt", sans-serif;
+  line-height: 1.6;
+}
+
+/* ปรับสีสถานะข้อความ */
+#status.text-blue-600 {
+  color: #3b82f6;
+}
+#status.text-green-600 {
+  color: #16a34a;
+}
+#status.text-red-600 {
+  color: #dc2626;
+}
+#status.text-gray-600 {
+  color: #4b5563;
+}
