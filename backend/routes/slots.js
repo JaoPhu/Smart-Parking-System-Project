@@ -1,118 +1,80 @@
 const express = require('express');
-const router = express.Router();
-const Slot = require('../models/Slot');
-const { requireAdmin } = require('../middleware/auth');
+const router  = express.Router();
+const Slot    = require('../models/Slot');
+const { verifyToken, requireAdmin } = require('../middleware/auth');
 
-// GET: ดูช่องจอดทั้งหมด
-router.get('/', async (req, res) => {
-    try {
-        const slots = await Slot.find().sort({ slotNumber: 1 });
-        res.json(slots);
-    } catch (err) {
-        res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
-    }
+// GET : ดูช่องจอดทั้งหมด (ทุกผู้ใช้ต้อง login)
+router.get('/', verifyToken, async (req, res) => {
+  const slots = await Slot.find().sort({ slotNumber: 1 });
+  res.json(slots);
 });
 
-// POST: เพิ่มช่องจอดใหม่
-router.post('/', async (req, res) => {
-    try {
-        const { slotNumber } = req.body;
-        const existing = await Slot.findOne({ slotNumber });
-        if (existing) return res.status(400).json({ error: 'slot นี้มีอยู่แล้ว' });
-        const newSlot = new Slot({ slotNumber });
-        await newSlot.save();
-        res.status(201).json(newSlot);
-    } catch (err) {
-        res.status(500).json({ error: 'ไม่สามารถเพิ่มช่องจอดได้' });
-    }
+// POST : เพิ่มช่องจอด (admin เท่านั้น – ใช้ครั้งเดียวตอน seed)
+router.post('/', requireAdmin, async (req, res) => {
+  const { slotNumber } = req.body;
+  if (await Slot.findOne({ slotNumber }))
+    return res.status(400).json({ error: 'slot นี้มีอยู่แล้ว' });
+
+  const newSlot = await Slot.create({ slotNumber });
+  res.status(201).json(newSlot);
 });
 
-// PUT: จอง / เข้าจอด / ออกจากช่อง
-router.put('/:slotNumber', async (req, res) => {
-    try {
-        const { slotNumber } = req.params;
-        const { action } = req.body;
-        const slot = await Slot.findOne({ slotNumber: parseInt(slotNumber) });
-        if (!slot) return res.status(404).json({ error: 'ไม่พบ slot นี้' });
+// PUT : reserve / park / leave (ทุกผู้ใช้ต้อง login)
+router.put('/:slotNumber', verifyToken, async (req, res) => {
+  const { slotNumber } = req.params;
+  const { action, username } = req.body;
+  const slot = await Slot.findOne({ slotNumber });
 
-        const now = new Date();
+  if (!slot) return res.status(404).json({ error: 'ไม่พบ slot นี้' });
 
-        if (action === 'reserve') {
-            slot.isBooked = true;
-            slot.isOccupied = false;
-            slot.bookedAt = now;
-            slot.bookedBy = req.body.username || "unknown";
-            slot.parkedAt = null;
-            slot.leftAt = null;
-            await slot.save();
-            return res.json(slot);
-        }
+  const now = new Date();
 
-        if (action === 'park') {
-            if (!slot.isBooked) {
-                return res.status(400).json({ error: 'ช่องนี้ยังไม่ได้จอง' });
-            }
+  if (action === 'reserve') {
+    slot.isBooked  = true;
+    slot.isOccupied = false;
+    slot.bookedAt  = now;
+    slot.bookedBy  = username;
+    slot.parkedAt  = slot.parkedBy = slot.leftAt = null;
+  }
 
-            const diffMin = (now - slot.bookedAt) / (1000 * 60);
-            if (diffMin > 15) {
-                return res.status(400).json({ error: 'หมดเวลาจอง 15 นาที' });
-            }
+  if (action === 'park') {
+    if (!slot.isBooked) return res.status(400).json({ error: 'ช่องยังไม่ได้จอง' });
+    if ((now - slot.bookedAt) > 15*60*1000)
+      return res.status(400).json({ error: 'หมดเวลาจอง 15 นาที' });
 
-            slot.isOccupied = true;
-            slot.parkedAt = now;
-            slot.parkedBy = req.body.username || slot.bookedBy || "unknown";
-            await slot.save();
-            return res.json(slot);
-        }
+    slot.isOccupied = true;
+    slot.parkedAt   = now;
+    slot.parkedBy   = username || slot.bookedBy;
+  }
 
-        if (action === 'leave') {
-            if (!slot.parkedAt) {
-                return res.status(400).json({ error: 'ไม่สามารถคิดค่าจอดได้: ไม่มีเวลาเข้า (parkedAt)' });
-            }
+  if (action === 'leave') {
+    if (!slot.parkedAt) return res.status(400).json({ error: 'ไม่มีเวลาที่จอด' });
 
-            const diffSeconds = Math.floor((now - slot.parkedAt) / 1000);
-            const fee = diffSeconds; // คิดวินาทีละ 1 บาท
+    const diffSec = Math.floor((now - slot.parkedAt) / 1000);
+    const hours   = Math.ceil(diffSec / 3600);   // ปัดขึ้น
+    const fee     = hours * 20;                  // ชั่วโมงละ 20 บาท
 
-            slot.leftAt = now;
-            slot.isOccupied = false;
-            slot.isBooked = false;
+    slot.leftAt     = now;
+    slot.isOccupied = false;
+    slot.isBooked   = false;
+    slot.bookedAt = slot.parkedAt = slot.bookedBy = slot.parkedBy = null;
 
-            // ✅ เพิ่มการรีเซตเวลาหลังจอด
-            slot.parkedAt = null;
-            slot.bookedAt = null;
+    await slot.save();
+    return res.json({ message: `ค่าจอด ${fee} บาท (เวลา ${hours} ชม.)`, slot });
+  }
 
-            await slot.save();
-
-            return res.json({
-                message: `รถออกแล้ว ค่าจอด ${fee} บาท (จอด ${diffSeconds} วินาที)`,
-                slot
-            });
-        }
-
-
-        return res.status(400).json({ error: 'action ไม่ถูกต้อง' });
-    } catch (err) {
-        console.error('❌ PUT Error:', err);
-        res.status(500).json({ error: 'ไม่สามารถอัปเดตข้อมูลได้' });
-    }
+  await slot.save();
+  res.json(slot);
 });
 
-// POST: รีเซตช่องจอดทั้งหมด
+// POST : รีเซตทั้งหมด (admin เท่านั้น)
 router.post('/reset', requireAdmin, async (req, res) => {
-    try {
-        await Slot.updateMany({}, {
-            isBooked: false,
-            isOccupied: false,
-            bookedAt: null,
-            parkedAt: null,
-            leftAt: null
-        });
-        console.log('🧼 [RESET] ล้างข้อมูลช่องจอดทั้งหมดแล้ว');
-        res.json({ message: 'รีเซตช่องจอดทั้งหมดเรียบร้อยแล้ว ✅' });
-    } catch (err) {
-        console.error('❌ Reset Error:', err);
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการรีเซตช่องจอด' });
-    }
+  await Slot.updateMany({}, {
+    isBooked:false,isOccupied:false,
+    bookedAt:null,parkedAt:null,leftAt:null,
+    bookedBy:null,parkedBy:null
+  });
+  res.json({ message:'รีเซตเรียบร้อย ✅' });
 });
 
 module.exports = router;

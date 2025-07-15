@@ -7,11 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
+    <!-- Redirect guard for user -->
+    <script>
+      const role = localStorage.getItem("role");
+      if (!role || role !== "user") {
+        window.location.href = "login.html";
+      }
+    </script>
 </head>
 <body class="bg-gray-100 text-gray-800 p-4 min-h-screen flex flex-col items-center">
   <button id="logout-btn" class="fixed top-4 right-4 btn btn-sm btn-outline-secondary z-50">
-  ออกจากระบบ
-</button>
+    ออกจากระบบ
+  </button>
 
     <main class="container mx-auto max-w-screen-lg py-8">
         <h1 class="text-4xl font-extrabold mb-4 text-center text-blue-700">🚗 ระบบจอดรถอัจฉริยะ (ผู้ใช้)</h1>
@@ -19,8 +26,7 @@
 
         <h2 class="text-2xl font-bold mb-4 text-gray-800">🅿️ สถานะช่องจอดปัจจุบัน</h2>
         <div id="status" class="mt-2 mb-4 text-center text-lg font-medium text-blue-600">กำลังโหลดข้อมูลช่องจอด...</div>
-        <div id="slots-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center">
-            </div>
+        <div id="slots-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center"></div>
 
         <h2 class="text-2xl font-bold mt-10 mb-4 text-gray-800">🕘 รายการจองและประวัติ</h2>
         <div id="history-container" class="mt-2 p-4 bg-white rounded-lg shadow-md text-sm text-gray-700">
@@ -29,17 +35,17 @@
     </main>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const userNameSpan = document.getElementById("user-name");
-            const username = localStorage.getItem("username");
-            if (username) {
-                userNameSpan.textContent = username;
-            } else {
-                userNameSpan.textContent = "ไม่ได้เข้าสู่ระบบ"; // Fallback if no username found
-                // Optional: Redirect to login page if not logged in
-                // window.location.href = "login.html";
-            }
-        });
+      /* แสดงชื่อผู้ใช้ */
+      document.addEventListener("DOMContentLoaded", () => {
+        const span=document.getElementById("user-name");
+        span.textContent = localStorage.getItem("username") || "ไม่ได้เข้าสู่ระบบ";
+      });
+
+      /* ปุ่ม Logout */
+      document.getElementById("logout-btn").addEventListener("click", () => {
+        localStorage.clear();
+        window.location.href = "login.html";
+      });
     </script>
     <script src="userLogin.js"></script>
 </body>

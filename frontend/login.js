@@ -25,6 +25,7 @@ document.getElementById("login-form").addEventListener("submit", async function 
     const result = await res.json(); // อ่าน response ก่อนตรวจสอบ res.ok
 
     if (res.ok) {
+      localStorage.setItem("token", result.token);
       localStorage.setItem("username", result.username);
       localStorage.setItem("role", result.role);
 
