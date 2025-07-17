@@ -1,69 +1,92 @@
 # 🚗 ระบบจอดรถอัจฉริยะ (Smart Parking System)
 
-โปรเจกต์นี้เป็นระบบจอดรถอัจฉริยะที่สามารถจอง จอด และคำนวณค่าจอดอัตโนมัติผ่านเว็บแอปพลิเคชัน  
-ใช้เซ็นเซอร์ตรวจจับรถ (IR Sensor), ไม้กั้น (Servo Motor), ESP32 และเชื่อมต่อกับ Web Server
+โปรเจกต์นี้เป็นระบบจอดรถอัจฉริยะที่สามารถ **จอง ▶ จอด ▶ ออก** และคำนวณค่าจอดอัตโนมัติผ่านเว็บแอป  
+**Hardware**: ESP32 + IR Sensors + Servo Motor **Backend**: Node/Express + MongoDB **Frontend**: HTML / Tailwind / Bootstrap
 
-## 🔧 เทคโนโลยีที่ใช้
+---
 
-- ESP32 สำหรับควบคุมฮาร์ดแวร์
-- Node.js + Express.js สำหรับ Backend API
-- MongoDB สำหรับเก็บข้อมูลช่องจอดและประวัติการใช้งาน
-- HTML + CSS + JavaScript (Vanilla JS) สำหรับหน้าเว็บ
-- TailwindCSS + Bootstrap สำหรับตกแต่ง UI
-- Postman สำหรับทดสอบ API
-- Git + GitHub สำหรับจัดการซอร์สโค้ด
+## 🔧 STACK & TOOLS
+| Layer        | Tech | Note |
+|--------------|------|------|
+| Hardware     | ESP32, IR Sensor x5, Servo x2 | ตรวจรถ + ไม้กั้น |
+| Backend      | **Node.js / Express** | JWT Auth, REST API |
+| Database     | **MongoDB** (Atlas) | Collection: `slots` |
+| Frontend     | HTML, Vanilla JS, TailwindCSS, Bootstrap | Responsive |
+| Utilities    | Postman, Git + GitHub | ทดสอบ API / CI |
 
-## 📂 โฟลเดอร์โปรเจกต์
+---
 
-📦 Smart_Parking_System_Project
-├── backend/
-│ ├── routes/
-│ ├── models/
-│ └── middleware/
-├── frontend/
-│ ├── index.html (หน้า login)
-│ ├── user.html (หน้า user)
-│ ├── dashboard.html (หน้า admin)
-│ └── script.js, style.css
-├── .env
-├── server.js
-└── README.md
+## 📂 STRUCTURE
+Smart_Parking_System_Project/
+├─ backend/
+│ ├─ routes/ (auth.js, slots.js, history.js)
+│ ├─ models/ (Slot.js)
+│ └─ middleware/ (auth.js)
+├─ frontend/
+│ ├─ login.html (หน้า Login)
+│ ├─ user.html (User Dashboard)
+│ ├─ dashboard.html (Admin Dashboard)
+│ ├─ script.js (shared logic)
+│ └─ style.css
+├─ server.js
+└─ .env
 
-## 👤 การเข้าสู่ระบบ (Hardcoded)
+---
 
-| บทบาท | Username | Password |
-|--------|----------|----------|
-| ผู้ดูแลระบบ | admin    | 1234     |
-| ผู้ใช้งานทั่วไป | user1, user2, ... | 1234     |
+## 👤 CREDENTIALS (Hard‑coded demo)
 
-## 📌 ฟีเจอร์
+| Role  | Username | Password |
+|-------|----------|----------|
+| Admin | **admin** | **1234** |
+| User  | **user1** | **1234** |
 
-- 🔒 ระบบ Login แยกระหว่าง Admin และ User
-- 🅿️ จองช่องจอดรถ (ภายใน 15 นาที)
-- 🚘 เข้าจอดและเก็บเวลาจอดอัตโนมัติ
-- ⏰ คำนวณค่าจอด (ชั่วโมงละ 20 บาท)
-- 🕓 แสดงประวัติการจอดรถแบบรายบุคคล
-- 🧼 Admin สามารถ Reset ฐานข้อมูลได้
-- 📶 เชื่อมต่อกับ ESP32 สำหรับเซ็นเซอร์ไม้กั้น (อนาคต)
+---
 
-## 🖼️ ตัวอย่างหน้าจอ
+## 🚀 RUN BACKEND
 
-> แนบภาพหน้าจอ เช่น user.html / dashboard.html หรือ demo วิดีโอ (ถ้ามี)
-
-## 🚀 วิธีรัน Backend
-
-```bash
 npm install
 nodemon server.js
+ต้องมี .env
 
-🌐 การใช้งาน
-เปิด login.html
-เลือก login แบบผู้ใช้หรือผู้ดูแล
-สำหรับผู้ใช้: ดูสถานะช่องจอด, จอง/จอด/ออก และดูประวัติ
-สำหรับผู้ดูแล: เข้าสู่ dashboard และรีเซตระบบ
+MONGODB_URI=<your Mongo URI>
+JWT_SECRET=smart-parking-secret
+PORT=5000
 
-📬 ผู้พัฒนา
-พัฒนาโดย
-1.นายธนภรณ์ วิเศษสังข์ 6630300351
-2.นายศิรสิทธิ์ สงแพง 6630300807
-ภายใต้โปรเจกต์ฝึก Embedded IoT วิชา [Embedded System / Kasetsart University Sriracha Campus]
+🌐 FLOW
+Login → /api/auth/login → รับ token, role, username
+
+Frontend เก็บใน localStorage
+ทุก request ที่ต้องยืนยัน ส่ง header
+Authorization: Bearer <token>
+x-role: <user | admin>
+User
+ดูสถานะ GET /api/slots
+จอง/จอด/ออก PUT /api/slots/:id
+ประวัติส่วนตัว GET /api/history
+Admin
+Dashboard แสดงทุกช่อง
+ประวัติทั้งหมด GET /api/history/admin
+รีเซต POST /api/slots/reset
+
+📌 FEATURES
+🔑 JWT Authentication + header x-role
+🅿️ จองล่วงหน้า 15 นาที (Auto‑expire Cron)
+⏰ ค่าจอด ชั่วโมงละ 20 บาท (ปัดขึ้น)
+🗂️ User History หน้า user.html
+🗂️ All History หน้า dashboard.html (admin)
+🧼 Reset Slots (admin only)
+🔄 ESP32 พร้อมเชื่อม (ส่ง PUT action ไป API)
+
+🛠️ API CHEAT‑SHEET
+Method	Endpoint	        Header & Body	                        Description
+POST    /api/auth/login	    	{ username, password }	                รับ token (JWT)
+GET	/api/slots	        Auth	                                รายชื่อช่องจอด
+PUT	/api/slots/:id	    	Auth + x-role + { action, username }	reserve / park / leave
+POST    /api/slots/reset	Auth (admin)	                        รีเซตทุกช่อง
+GET	/api/history	    	Auth	                                ประวัติของตัวเอง
+GET	/api/history/admin	Auth (admin)	                        ประวัติทุกคน
+
+👨‍💻 AUTHORS
+นาย ธนภรณ์ วิเศษสังข์ 6630300351
+นาย ศิรสิทธิ์ สงแพง 6630300807
+(Embedded IoT Project – Kasetsart University Sriracha)
