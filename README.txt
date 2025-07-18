@@ -78,13 +78,13 @@ Dashboard แสดงทุกช่อง
 🔄 ESP32 พร้อมเชื่อม (ส่ง PUT action ไป API)
 
 🛠️ API CHEAT‑SHEET
-Method	Endpoint	        Header & Body	                        Description
-POST    /api/auth/login	    	{ username, password }	                รับ token (JWT)
-GET	/api/slots	        Auth	                                รายชื่อช่องจอด
-PUT	/api/slots/:id	    	Auth + x-role + { action, username }	reserve / park / leave
-POST    /api/slots/reset	Auth (admin)	                        รีเซตทุกช่อง
-GET	/api/history	    	Auth	                                ประวัติของตัวเอง
-GET	/api/history/admin	Auth (admin)	                        ประวัติทุกคน
+Method	Endpoint	          Header & Body	                        Description
+POST    /api/auth/login	    { username, password }	              รับ token (JWT)
+GET	    /api/slots	        Auth	                                รายชื่อช่องจอด
+PUT	    /api/slots/:id	    Auth + x-role + { action, username }	reserve / park / leave
+POST    /api/slots/reset	  Auth (admin)	                        รีเซตทุกช่อง
+GET	    /api/history	    	Auth	                                ประวัติของตัวเอง
+GET	    /api/history/admin	Auth (admin)	                        ประวัติทุกคน
 
 👨‍💻 AUTHORS
 นาย ธนภรณ์ วิเศษสังข์ 6630300351
